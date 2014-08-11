@@ -21,18 +21,18 @@ class TagAutoSuggest(forms.TextInput):
         return super(TagAutoSuggest, self).__init__(*args, **kwargs)
 
     def render(self, name, value, attrs=None):
-        if value is not None and not isinstance(value, basestring):
+        if hasattr(value, "select_related"):
             tags = [o.tag for o in value.select_related("tag")]
             value = edit_string_for_tags(tags)
             
         autosuggest_url = reverse('taggit_autosuggest-list', kwargs={'tagmodel': self.tagmodel})
 
-        result_attrs = copy.copy(attrs)
+        result_attrs = copy.copy(attrs) if attrs else {}
         result_attrs['type'] = 'hidden'
         result_html = super(TagAutoSuggest, self).render(name, value,
             result_attrs)
 
-        widget_attrs = copy.copy(attrs)
+        widget_attrs = copy.copy(attrs) if attrs else {}
         widget_attrs['id'] += '__tagautosuggest'
         widget_html = super(TagAutoSuggest, self).render(name, value,
             widget_attrs)
@@ -42,20 +42,46 @@ class TagAutoSuggest(forms.TextInput):
             (function ($) {
                 var tags_as_string;
 
+                String.prototype.toProperCase = function () {
+                    return this.replace(/\w\S*/g, function(txt) {
+                        return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+                    });
+                };
+
+                Array.prototype.toUnique = function() {
+                    var dict = {},
+                        arrayLength = this.length,
+                        elem,
+                        i,
+                        key,
+                        uniqueArray = [];
+                    for (i = 0; i < arrayLength; i++) {
+                        elem = this[i];
+                        dict[elem] = elem;
+                    }
+                    for (key in dict) {
+                        uniqueArray.push(key);
+                    }
+                    return uniqueArray;
+                };
+
                 $(document).ready(function (){
                     tags_as_string = $('#%(result_id)s').val();
 
-                    $("#%(widget_id)s").autoSuggest("%(url)s", {
-                        asHtmlID: "%(widget_id)s",
-                        startText: "%(start_text)s",
-                        emptyText: "%(empty_text)s",
-                        limitText: "%(limit_text)s",
-                        preFill: tags_as_string,
-                        queryParam: 'q',
-                        retrieveLimit: %(retrieve_limit)d,
-                        minChars: 1,
-                        neverSubmit: true
-                    });
+                    /* Be sure to instantiate it a single time */
+                    if (typeof($("#as-selections-" + "%(widget_id)s").get(0)) === 'undefined') {
+                        $("#%(widget_id)s").autoSuggest("%(url)s", {
+                            asHtmlID: "%(widget_id)s",
+                            startText: "%(start_text)s",
+                            emptyText: "%(empty_text)s",
+                            limitText: "%(limit_text)s",
+                            preFill: tags_as_string,
+                            queryParam: 'q',
+                            retrieveLimit: %(retrieve_limit)d,
+                            minChars: 1,
+                            neverSubmit: true
+                        });
+                    }
 
                     $('.as-selections').addClass('vTextField');
                     $('ul.as-selections li.as-original input').addClass('vTextField');
@@ -77,7 +103,7 @@ class TagAutoSuggest(forms.TextInput):
                 'retrieve_limit': MAX_SUGGESTIONS,
             }
         return result_html + widget_html + mark_safe(js)
-    
+
     class Media:
         css_filename = getattr(settings, 'TAGGIT_AUTOSUGGEST_CSS_FILENAME',
             'autoSuggest.css')

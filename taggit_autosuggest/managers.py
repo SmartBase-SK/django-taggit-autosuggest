@@ -1,4 +1,4 @@
-from django.utils.translation import ugettext_lazy as _
+from django.utils.text import capfirst
 from taggit.forms import TagField
 from taggit.managers import TaggableManager as BaseTaggableManager
 from taggit_autosuggest.widgets import TagAutoSuggest
@@ -16,5 +16,4 @@ class TaggableManager(BaseTaggableManager):
             "widget": TagAutoSuggest(tagmodel=tagmodel),
         }
         defaults.update(kwargs)
-
         return form_class(**defaults)
