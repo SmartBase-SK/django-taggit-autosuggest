@@ -39,11 +39,11 @@ def list_tags(request, tagmodel=None):
         limit = MAX_SUGGESTIONS
 
     tag_name_qs = TAG_MODEL.objects.filter(name__icontains=query).\
-        values_list('name', flat=True)
+        values('name', 'language_code')
 
     if callable(getattr(TAG_MODEL, 'request_filter', None)):
         tag_name_qs = tag_name_qs.filter(TAG_MODEL.request_filter(request)).distinct()
 
-    data = [{'name': n, 'value': n} for n in tag_name_qs[:limit]]
+    data = [{'name': n['name'], 'value': "{} ({})".format(n['name'], n['language_code'])} for n in tag_name_qs[:limit]]
 
     return HttpResponse(json.dumps(data), content_type='application/json')
