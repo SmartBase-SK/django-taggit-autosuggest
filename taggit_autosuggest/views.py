@@ -37,13 +37,13 @@ def list_tags(request, tagmodel=None):
         limit = min(int(limit), MAX_SUGGESTIONS)  # max or less
     except ValueError:
         limit = MAX_SUGGESTIONS
-
-    tag_name_qs = TAG_MODEL.objects.filter(name__icontains=query).\
-        values('name', 'language_code')
+    lang = request.GET.get('language', request.LANGUAGE_CODE)
+    tag_name_qs = TAG_MODEL.objects.filter(name__icontains=query, language_code=lang).\
+        values('name')
 
     if callable(getattr(TAG_MODEL, 'request_filter', None)):
-        tag_name_qs = tag_name_qs.filter(TAG_MODEL.request_filter(request)).distinct()
+        tag_name_qs = tag_name_qs.filter(TAG_MODEL.request_filter(request), language_code=lang).distinct()
 
-    data = [{'name': n['name'], 'value': "{} ({})".format(n['name'], n['language_code'])} for n in tag_name_qs[:limit]]
+    data = [{'name': n['name'], 'value': n['name']} for n in tag_name_qs[:limit]]
 
     return HttpResponse(json.dumps(data), content_type='application/json')

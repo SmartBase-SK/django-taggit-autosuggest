@@ -11,6 +11,14 @@ from django.utils.translation import ugettext_lazy as _
 
 from taggit_autosuggest.utils import edit_string_for_tags
 
+try:
+    # django >= 1.7
+    from django.apps import apps
+    get_model = apps.get_model
+except ImportError:
+    # django < 1.7
+    from django.db.models import get_model
+
 
 MAX_SUGGESTIONS = getattr(settings, 'TAGGIT_AUTOSUGGEST_MAX_SUGGESTIONS', 20)
 
@@ -24,6 +32,7 @@ class TagAutoSuggest(forms.TextInput):
         return super(TagAutoSuggest, self).__init__(*args, **kwargs)
 
     def render(self, name, value, attrs=None, renderer=None, *args, **kwargs):
+        value = list(get_model(self.tagmodel).objects.filter(language_code=self.language_code, id__in=[t.id for t in value]))
         if hasattr(value, "select_related"):
             tags = [o.tag for o in value.select_related("tag")]
             value = edit_string_for_tags(tags)
@@ -82,9 +91,36 @@ class TagAutoSuggest(forms.TextInput):
                     }
                     return uniqueArray;
                 };
+                
+                function formatToJSON(lang, values) {
+                    var obj = new Object();
+                    obj.language_code = lang;
+                    obj.tags  = values;
+                    return JSON.stringify(obj)
+                }
+                
+                function getCookie(cname) {
+                  var name = cname + "=";
+                  var ca = document.cookie.split(';');
+                  for(var i = 0; i < ca.length; i++) {
+                    var c = ca[i];
+                    while (c.charAt(0) == ' ') {
+                      c = c.substring(1);
+                    }
+                    if (c.indexOf(name) == 0) {
+                      return c.substring(name.length, c.length);
+                    }
+                  }
+                  return "";
+                }
 
+                
                 $(document).ready(function (){
                     tags_as_string = $('#%(result_id)s').val();
+                    var searchParams = new URLSearchParams(window.location.search)
+                    var tab_lang = ((searchParams.get('language') !== null) ? searchParams.get('language') : getCookie('django_language'))
+                                   
+     
 
                     /* Be sure to instantiate it a single time */
                     if (typeof($("#as-selections-" + "%(widget_id)s").get(0)) === 'undefined') {
@@ -97,7 +133,8 @@ class TagAutoSuggest(forms.TextInput):
                             queryParam: 'q',
                             retrieveLimit: %(retrieve_limit)d,
                             minChars: 1,
-                            neverSubmit: true
+                            neverSubmit: true,
+                            extraParams: "&language=" + tab_lang
                         });
                     }
 
@@ -107,6 +144,7 @@ class TagAutoSuggest(forms.TextInput):
                     $('#%(result_id)s').parents().find('form').submit(function (){
                         tags_as_string = $("#as-values-%(widget_id)s").val();
                         $("#%(widget_id)s").remove();
+                        tags_as_string = formatToJSON(tab_lang, tags_as_string);
                         $("#%(result_id)s").val(tags_as_string);
                     });
                 });
