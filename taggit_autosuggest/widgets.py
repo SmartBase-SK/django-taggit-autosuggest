@@ -1,3 +1,5 @@
+import json
+
 import copy
 from django import VERSION
 from django import forms
@@ -32,7 +34,11 @@ class TagAutoSuggest(forms.TextInput):
         return super(TagAutoSuggest, self).__init__(*args, **kwargs)
 
     def render(self, name, value, attrs=None, renderer=None, *args, **kwargs):
-        value = list(get_model(self.tagmodel).objects.filter(language_code=self.language_code, id__in=[t.id for t in value]))
+        if value and not isinstance(value, str):
+            value = list(get_model(self.tagmodel).objects.filter(language_code=self.language_code, id__in=[t.id for t in value]))
+        else:
+            dict_obj = json.loads(value)
+            value = dict_obj['tags']
         if hasattr(value, "select_related"):
             tags = [o.tag for o in value.select_related("tag")]
             value = edit_string_for_tags(tags)
