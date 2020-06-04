@@ -34,7 +34,9 @@ class TagAutoSuggest(forms.TextInput):
         return super(TagAutoSuggest, self).__init__(*args, **kwargs)
 
     def render(self, name, value, attrs=None, renderer=None, *args, **kwargs):
-        if value and not isinstance(value, str):
+        if not value:
+            value = []
+        if not isinstance(value, str):
             value = list(get_model(self.tagmodel).objects.filter(language_code=self.language_code, id__in=[t.id for t in value]))
         else:
             dict_obj = json.loads(value)
