@@ -35,7 +35,8 @@ class TagAutoSuggest(forms.TextInput):
 
     def render(self, name, value, attrs=None, renderer=None, *args, **kwargs):
         if not value:
-            value = []
+            value = '{"tags":[], "language_code": ""}'
+
         if not isinstance(value, str):
             value = list(get_model(self.tagmodel).objects.filter(language_code=self.language_code, id__in=[t.id for t in value]))
         else:
