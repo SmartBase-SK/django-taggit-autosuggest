@@ -9,7 +9,7 @@ if VERSION < (2, 0):
 else:
     from django.urls import reverse
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from taggit_autosuggest.utils import edit_string_for_tags
 
