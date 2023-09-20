@@ -16,7 +16,7 @@ def edit_string_for_tags(tags):
     """
     names = []
     for tag in tags:
-        name = tag.name
+        name = str(tag)
         if u',' in name:
             names.append('"%s"' % name)
         else:
